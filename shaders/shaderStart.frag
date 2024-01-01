@@ -230,17 +230,17 @@ void main()
     }
     vec3 color = min((ambient + diffuse * (1 - shadow)) * texture(diffuseTexture, fTexCoords).rgb + specular * (1 - shadow) * texture(specularTexture, fTexCoords).rgb, 1.0f);
 
-    fColor = vec4(color, 1.0f);
+    vec3 colorF = min(color, (ambient + diffuse)+specular);
     float fogFactor = computeFog();
 	vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
     if ( fogInitial == 0)
 	{
 
-		fColor = min(fColor * vec4(light, 1.0f), 1.0f);
+		fColor = min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f);
 	}
 	else
 	{
  
-		fColor = mix(fogColor, min(fColor * vec4(light, 1.0f), 1.0f), fogFactor);
+		fColor = mix(fogColor, min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f), fogFactor);
 	}
 }

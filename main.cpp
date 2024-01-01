@@ -18,6 +18,7 @@
 #include "Camera.hpp"
 
 #include <iostream>
+#include "SkyBox.hpp"
 
 int glWindowWidth = 800;
 int glWindowHeight = 600;
@@ -28,6 +29,8 @@ GLFWwindow* glWindow = NULL;
 // shadows
 const unsigned int SHADOW_WIDTH = 2048;
 const unsigned int SHADOW_HEIGHT = 2048;
+
+std::vector<const GLchar*> facesSkyBox;
 
 int pointLight = 0;
 int spotLight = 0;
@@ -86,6 +89,7 @@ gps::Shader myCustomShader;
 gps::Shader depthMapShader;
 gps::Shader lightShader;
 gps::Shader screenQuadShader;
+gps::Shader skyBoxShader;
 
 GLuint shadowMapFBO;
 GLuint depthMapTexture;
@@ -97,6 +101,7 @@ float previewAngle = 0.6f;
 int fogInitial = 0;
 GLint fogInitLoc;
 GLfloat fogDensity = 0.005f;
+gps::SkyBox skyBox;
 
 bool showDepthMap;
 
@@ -297,9 +302,7 @@ void processMovement()
 	}
 
 	if (pressedKeys[GLFW_KEY_I]) {
-		rotation = !rotation;
-		if (rotation)
-			angleUmbrella += 1.0f;
+		angleUmbrella += 1.0f;
 	}
 }
 
@@ -375,7 +378,7 @@ void initObjects() {
 	pigeon.LoadModel("objects/pigeon/body.obj");
 	swing.LoadModel("objects/swing/woodswing.obj");
 	swing.LoadModel("objects/swing/swingBars.obj");
-	umbrella.LoadModel("objects/umbrella/umbrella.obj");
+	umbrella.LoadModel("objects/umbrella/umbrela1.obj");
 	boat.LoadModel("objects/ship/boat.obj");
 	//palm.LoadModel("objects/palm/free_palm.obj");
 	//leaves.LoadModel("objects/palm/coroane.obj");
@@ -390,6 +393,32 @@ void initShaders() {
 	screenQuadShader.useShaderProgram();
 	depthMapShader.loadShader("shaders/lightSpaceTrMatrix.vert", "shaders/lightSpaceTrMatrix.frag");
 	depthMapShader.useShaderProgram();
+	skyBoxShader.loadShader("shaders/skyBoxShader.vert", "shaders/skyBoxShader.frag");
+	skyBoxShader.useShaderProgram();
+}
+
+void skyBoxShaderInit()
+{
+	skyBox.Load(facesSkyBox);
+	skyBoxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
+	skyBoxShader.useShaderProgram();
+	view = myCamera.getViewMatrix();
+	glUniformMatrix4fv(glGetUniformLocation(skyBoxShader.shaderProgram, "view"), 1, GL_FALSE,
+		glm::value_ptr(view));
+
+	projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 1000.0f);
+	glUniformMatrix4fv(glGetUniformLocation(skyBoxShader.shaderProgram, "projection"), 1, GL_FALSE,
+		glm::value_ptr(projection));
+}
+
+void facesForSkyBox()
+{
+	facesSkyBox.push_back("skyBox/right.tga");
+	facesSkyBox.push_back("skyBox/left.tga");
+	facesSkyBox.push_back("skyBox/top.tga");
+	facesSkyBox.push_back("skyBox/bottom.tga");
+	facesSkyBox.push_back("skyBox/back.tga");
+	facesSkyBox.push_back("skyBox/front.tga");
 }
 
 float spotlight;
@@ -483,8 +512,8 @@ glm::mat4 computeLightSpaceTrMatrix() {
 
 	glm::mat4 lightView = glm::lookAt(lightDirAux, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	const GLfloat near_plane = 0.1f, far_plane = 6.0f;
-	glm::mat4 lightProjection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
+	const GLfloat near_plane = 0.8f, far_plane = 60.0f;
+	glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
 
 	glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
 
@@ -580,7 +609,7 @@ void drawObjects(gps::Shader shader, bool depthPass) {
 	angularSpeed = 0.1f;
 	deltaTime = 0.00001f;
 
-	glm::vec3 centerOfCircleUmbrella(-65.402f, -2.73f, 103.23f);
+	glm::vec3 centerOfCircleUmbrella(-65.547f, -5.88f, 105.59f);
 
 	model = glm::translate(glm::mat4(1.0f), centerOfCircleUmbrella);
 	model = glm::scale(model, glm::vec3(1.0f));
@@ -595,6 +624,8 @@ void drawObjects(gps::Shader shader, bool depthPass) {
 	}
 
 	umbrella.Draw(shader);
+
+	skyBox.Draw(skyBoxShader, view, projection);
 }
 
 void renderScene() {
@@ -694,7 +725,7 @@ void renderScene() {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthMapTexture);
 		glUniform1i(glGetUniformLocation(screenQuadShader.shaderProgram, "depthMap"), 0);
-
+		glCheckError();
 		glDisable(GL_DEPTH_TEST);
 		screenQuad.Draw(screenQuadShader);
 		glEnable(GL_DEPTH_TEST);
@@ -759,6 +790,9 @@ int main(int argc, const char * argv[]) {
 	initShaders();
 	initUniforms();
 	initFBO();
+
+	facesForSkyBox();
+	skyBoxShaderInit();
 
 	glCheckError();
 
