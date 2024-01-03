@@ -798,22 +798,11 @@ void renderScene() {
 		lightPos.x = radius * cos(angle);
 		lightPos.y = 150.56f;  // Keep the same height as in your original code
 		lightPos.z = radius * sin(angle);
-		// Initialize the light camera
-		gps::Camera lightCamera(
-			glm::vec3(lightPos.x, lightPos.y, lightPos.z),  // Position of the light source
-			glm::vec3(0.0f, 0.0f, 0.0f),  // The point the light is looking at (could be the center of your scene)
-			glm::vec3(0.0f, 1.0f, 0.0f)   // Up vector (usually (0,1,0) is fine)
-		);
 
 		// Set the view matrix
 		//view = myCamera.getViewMatrix();
-		//glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		view = lightCamera.getViewMatrix();
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-		// Use the user's camera when rendering the scene
-		view = myCamera.getViewMatrix();
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		// Create the model matrix for the light cube
 		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
 		lightModel = glm::rotate(lightModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));  // Rotate around the origin
