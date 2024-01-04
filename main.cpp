@@ -27,8 +27,8 @@ int retina_width, retina_height;
 GLFWwindow* glWindow = NULL;
 
 // shadows
-const unsigned int SHADOW_WIDTH = 2048;
-const unsigned int SHADOW_HEIGHT = 2048;
+const unsigned int SHADOW_WIDTH = 3000;
+const unsigned int SHADOW_HEIGHT = 3000;
 
 std::vector<const GLchar*> facesSkyBox;
 
@@ -88,6 +88,7 @@ gps::Model3D palm;
 gps::Model3D leaves;
 gps::Model3D boat;
 gps::Model3D lightCube;
+gps::Model3D coroane;
 
 gps::Shader myCustomShader;
 gps::Shader depthMapShader;
@@ -211,11 +212,11 @@ void processMovement()
 	}
 
 	if (pressedKeys[GLFW_KEY_J]) {
-		lightAngle -= 1.0f;		
+		lightAngle -= 2.0f;		
 	}
 
 	if (pressedKeys[GLFW_KEY_L]) {
-		lightAngle += 1.0f;
+		lightAngle += 2.0f;
 	}
 
 	if (pressedKeys[GLFW_KEY_W]) {
@@ -414,6 +415,7 @@ void initObjects() {
 	boat.LoadModel("objects/ship/boat.obj");
 	screenQuad.LoadModel("objects/quad/quad.obj");
 	lightCube.LoadModel("objects/cube/cube.obj");
+	coroane.LoadModel("objects/island/coroane.obj");
 }
 
 void initShaders() {
@@ -474,7 +476,7 @@ void initUniforms() {
 
 	lightDir = glm::vec3(0.0f, 1.0f, 1.0f);
 	lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 150.56f, 201.05f));
-	lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");	
+	lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");	;
 	glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
 
 	lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -488,7 +490,7 @@ void initUniforms() {
 
 	//spotlight
 	spotLightDirection = glm::normalize(glm::vec3(0, -1, 0));
-	spotLightPosition = glm::vec3(75.967f, -21.944f, 1.12f);
+	spotLightPosition = glm::vec3(-60.245f, -5.9461f, -111.09f);
 
 	spotLightCutoff = glm::cos(glm::radians(45.0f));
 	spotLightInnerCutoff = glm::cos(glm::radians(100.0f));
@@ -531,14 +533,13 @@ glm::mat4 computeLightSpaceTrMatrix() {
 
 	float lightAngleRadian = glm::radians(lightAngle);
 	lightRotation = glm::rotate(glm::mat4(1.0f), lightAngleRadian, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::vec3 lightDirAux = glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir;
+	glm::vec3 lightDirAux = glm::inverseTranspose(glm::mat3(lightRotation)) * lightDir;
 	glm::mat4 lightView = glm::lookAt(lightDirAux, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	const GLfloat near_plane = 10.1f, far_plane = 300.0f;
-	glm::mat4 lightProjection = glm::ortho(-200.0f, 200.0f, -200.0f, 200.0f, near_plane, far_plane);
+	const GLfloat near_plane = 10.1f, far_plane = 600.0f;
+	glm::mat4 lightProjection = glm::ortho(-300.0f, 300.0f, -300.0f, 300.0f, near_plane, far_plane);
 	glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
 	return lightSpaceTrMatrix;
 }
-
 
 void drawObjects(gps::Shader shader, bool depthPass) {
 		
@@ -554,20 +555,8 @@ void drawObjects(gps::Shader shader, bool depthPass) {
 
 	island.Draw(shader);
 
-	//model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 150.56f, 201.05f));
-	//model = glm::scale(model, glm::vec3(0.5f));
-
-	//glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	//if (!depthPass) {
-	//	normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-	//	glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-	//}
-
-	//sun.Draw(shader);
-
 	model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
-	model = glm::translate(model, glm::vec3(62.302f, -0.55492f, 100.27f));
+	model = glm::translate(model, glm::vec3(7.7052f, 0.73919f, 1.9751f));
 
 	glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
@@ -601,9 +590,11 @@ void drawObjects(gps::Shader shader, bool depthPass) {
 
 	pigeon.Draw(shader);
 
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(45.73f, -0.55492f, 60.27f));
+	model = glm::translate(glm::mat4(1.0f), glm::vec3(-34.068f, -15.462f, -167.18f));
 	model = glm::scale(model, glm::vec3(0.5f));
-
+	float var = sin(glfwGetTime()) * 0.2f;
+	model = glm::rotate(glm::mat4(1.0f), glm::radians(var), glm::vec3(-1.0f, -1.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(var), glm::vec3(0.0f, -1.0f, 1.0f));
 	glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 	if (!depthPass) {
@@ -662,79 +653,6 @@ void renderScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	/*depthMapShader.useShaderProgram();
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 150.56f, 201.05f));
-	model = glm::scale(model, glm::vec3(0.5f));
-
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	sun.Draw(depthMapShader);
-
-	depthMapShader.useShaderProgram();
-	model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
-	model = glm::translate(model, glm::vec3(62.302f, -0.55492f, 100.27f));
-
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	swingBars.Draw(depthMapShader);
-
-	depthMapShader.useShaderProgram();
-	float radius = 10.0f;
-	float angularSpeed = 0.1f;
-	float deltaTime = 0.01f;
-	float angleWind = 0.0f;
-
-	glm::vec3 centerOfCircle(100.0f, 103.56f, 104.05f);
-	glm::vec3 initialPigeonPosition = centerOfCircle + glm::vec3(radius, 0.0f, 0.0f);
-
-	model = glm::translate(glm::mat4(1.0f), initialPigeonPosition);
-	model = glm::scale(model, glm::vec3(0.5f));
-
-	anglePigeon -= angularSpeed * deltaTime;
-	model = glm::rotate(model, anglePigeon, glm::vec3(0.0f, 1.0f, 0.0f));
-
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	pigeon.Draw(depthMapShader);
-
-	depthMapShader.useShaderProgram();
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(45.73f, -0.55492f, 60.27f));
-	model = glm::scale(model, glm::vec3(0.5f));
-
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	swing.Draw(depthMapShader);
-
-	depthMapShader.useShaderProgram();
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(-100.65f, 4.6584f, -228.71f));
-	model = glm::scale(model, glm::vec3(0.5f));
-	model = glm::translate(model, glm::vec3(-100.65f + moveRight, 4.6584f + moveUp, -228.71f));
-
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	boat.Draw(depthMapShader);
-
-	depthMapShader.useShaderProgram();
-	radius = 0.0f;
-	angularSpeed = 0.1f;
-	deltaTime = 0.00001f;
-
-	glm::vec3 centerOfCircleUmbrella(-65.402f, -2.73f, 103.23f);
-
-	model = glm::translate(glm::mat4(1.0f), centerOfCircleUmbrella);
-	model = glm::scale(model, glm::vec3(1.0f));
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	model = glm::rotate(model, glm::radians(angleUmbrella), glm::vec3(0.0f, 1.0f, 0.0f));
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-	umbrella.Draw(depthMapShader);
-
-	depthMapShader.useShaderProgram();
-	model = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::vec3(0.0f, 1.0f, 0.0f));
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-	island.Draw(depthMapShader);*/
-
 	drawObjects(depthMapShader, true);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -774,7 +692,6 @@ void renderScene() {
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 		glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "shadowMap"), 3);
 		glUniformMatrix4fv(glGetUniformLocation(myCustomShader.shaderProgram, "lightSpaceTrMatrix"),
 			1,
@@ -789,30 +706,21 @@ void renderScene() {
 
 		lightShader.useShaderProgram();
 
-		// Assuming lightDir represents the direction of the light
-		float radius = someDistance;  // Set the radius of the circle
-		float angle = glm::radians(lightAngle);  // Convert the angle to radians
+		float radius = someDistance;
+		float angle = glm::radians(lightAngle);
 
-		// Calculate the position of the light cube in a circular path around the origin
 		glm::vec3 lightPos;
 		lightPos.x = radius * cos(angle);
-		lightPos.y = 150.56f;  // Keep the same height as in your original code
+		lightPos.y = 150.56f;
 		lightPos.z = radius * sin(angle);
 
-		// Set the view matrix
-		//view = myCamera.getViewMatrix();
 		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-		// Create the model matrix for the light cube
 		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPos);
-		lightModel = glm::rotate(lightModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));  // Rotate around the origin
+		lightModel = glm::rotate(lightModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		lightModel = glm::scale(lightModel, glm::vec3(10.0f));
 
-		// Set the model matrix
 		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-
-		// Draw the light cube
-		lightCube.Draw(lightShader);
 	}
 }
 

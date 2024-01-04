@@ -49,9 +49,10 @@ float spotQuadratic = 0.05f;
 float spotLinear = 0.15f;
 float spotConstant = 5.0f;
 
-vec3 spotLightAmbient = vec3(0.0f, 0.0f, 0.0f);
+vec3 spotLightAmbient = vec3(0.1f, 0.1f, 0.1f);
+vec3 spotLightDiffuse = vec3(0.8f, 0.8f, 0.8f);
 vec3 spotLightSpecular = vec3(1.0f, 1.0f, 1.0f);
-vec3 spotLightColor = vec3(12,12,12);
+vec3 spotLightColor = vec3(20,20,20);
 
 uniform float spotLightCutoff;
 uniform float spotLightInnerCutoff;
@@ -106,36 +107,42 @@ float computeShadow()
 		return 0.0f;
 	float closestDepth = texture(shadowMap, normalizedCoords.xy).r;
 	float currentDepth = normalizedCoords.z;
-	float bias = 0.005f;
-	float shadow = currentDepth - bias > closestDepth ? 1.0f : 0.0f;
-	return shadow;
+    float bias2 = max(0.05f * (1.0f - dot(normalize(fNormal), lightDir)), 0.005f);
+	float shadow2 = currentDepth - bias2 > closestDepth ? 1.0f : 0.0f;
+	return shadow2;
 }
 
-vec3 spotLightComputation(vec4 lightPosEye)
-{
+vec4 spotLightComputation() {
     vec3 cameraPosEye = vec3(0.0f);
-    vec3 normalEye = normalize(normalMatrix * fNormal);
-    vec3 lightDirN = normalize(lightPosEye.xyz - fPosEye.xyz);
+    vec3 ambient = spotLightAmbient * lightColor;
+    
+    // Diffuse
+    vec3 norm = normalize(fNormal);
+    vec3 lightDirN = normalize(spotLightPosition - fPosEye.xyz);
+    float diff = max(dot(norm, lightDirN), 0.0);
+    vec3 diffuse = spotLightDiffuse * diff * lightColor;
+    
+    // Specular
     vec3 viewDirN = normalize(cameraPosEye - fPosEye.xyz);
-    vec3 ambient = spotLightAmbient * vec3(texture(diffuseTexture, fTexCoords));
-    vec3 diffuse = max(dot(normalEye, lightDirN), 0.0f) * vec3(texture(diffuseTexture, fTexCoords));
-    vec3 halfVector = normalize(lightDirN + viewDirN);
-    float specCoeff = pow(max(dot(normalEye, halfVector), 0.0f), shininess);
-    vec3 specular = spotLightSpecular * specCoeff * vec3(texture(specularTexture, fTexCoords));
-
+    vec3 reflectDir = reflect(-lightDirN, norm);
+    float spec = pow(max(dot(reflectDir, viewDirN), 0.0), shininess);
+    vec3 specular = spotLightSpecular * spec * lightColor;
+    
+    // Spotlight (soft edges)
     float theta = dot(lightDirN, normalize(-spotLightDirection));
     float epsilon = (spotLightCutoff - spotLightInnerCutoff);
     float intensity = clamp((theta - spotLightInnerCutoff) / epsilon, 0.0, 1.0);
     diffuse  *= intensity;
     specular *= intensity;
-
-    float distance = length(lightPosEye.xyz - fPosEye.xyz);
+    
+    // Attenuation
+    float distance    = length(spotLightPosition - fPosEye.xyz);
     float attenuation = 1.0f / (spotConstant + spotLinear * distance + spotQuadratic * (distance * distance));
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
-
-    return (ambient + diffuse + specular);
+    
+    return vec4(ambient + diffuse + specular, 1.0f);
 }
 
 float computeFog()
@@ -153,40 +160,38 @@ void main()
     vec3 baseColor = vec3(0.9f, 0.35f, 0.0f);
     vec4 diffuseColor = texture(diffuseTexture, fTexCoords);
     float shadow = computeShadow();
-    vec3 spotlightEffect = vec3(0.0);
+    vec4 spotlightEffect = spotLightComputation();
+    light += (100 * spotlightEffect.rgb);
 
     ambient *= vec3(texture(diffuseTexture, fTexCoords)) * 1.2f;
     diffuse *= vec3(texture(diffuseTexture, fTexCoords));
     specular *= vec3(texture(specularTexture, fTexCoords));
 
-	if (spotLight == 1) {
-		vec4 lightPosEye1 = view * vec4(spotLightPosition, 1.0f);
-		vec3 spotlightEffect = spotLightComputation(lightPosEye1);   
-		//ambient *= spotlightEffect * vec3(texture(diffuseTexture, fTexCoords)) * 1.2f;
-		//diffuse *= spotlightEffect * vec3(texture(diffuseTexture, fTexCoords));
-		//specular *= spotlightEffect * vec3(texture(specularTexture, fTexCoords));
-	}
-
     if (pointLight == 1) {
         vec4 lightPosEye1 = view * vec4(lightPos1, 1.0f);
         vec3 pointLightValue = computePointLight(lightPosEye1);
-
         ambient *= pointLightValue * ambientStrength * diffuseColor.rgb;
         diffuse *= pointLightValue * max(dot(normalize(normalMatrix * fNormal), normalize(lightPosEye1.xyz - fPosEye.xyz)), 0.0) * diffuseColor.rgb;
         specular *= pointLightValue * specularStrength * pow(max(dot(normalize(normalMatrix * fNormal), reflect(-normalize(lightPosEye1.xyz - fPosEye.xyz), normalize(normalMatrix * fNormal))), 0.0), shininess) * texture(specularTexture, fTexCoords).rgb;
     }
 
-    vec3 color = min((ambient + (1.0f - shadow)*diffuse) + (1.0f - shadow) * specular, 1.0f);
-	color += spotlightEffect;
-	vec3 colorF = min(color + spotlightEffect, (ambient + diffuse)+specular);
+    vec3 color = min((ambient + (1.0f - shadow) * diffuse) + (1.0f - shadow) * specular, 1.0f);
+    vec3 colorF = min(color, (ambient + diffuse) + specular);
+
     float fogFactor = computeFog();
     vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
-    if ( fogInitial == 0)
-    {
+
+    if (fogInitial == 0) {
         fColor = min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f);
-    }
-    else
-    {
+    } else {
         fColor = mix(fogColor, min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f), fogFactor);
+    }
+
+    if (spotLight == 1) {
+        ambient += light * ambientStrength * diffuseColor.rgb;
+        diffuse += light * max(dot(normalize(normalMatrix * fNormal), normalize(spotLightPosition.xyz - fPosEye.xyz)), 0.0) * diffuseColor.rgb;
+        specular += light * specularStrength * pow(max(dot(normalize(normalMatrix * fNormal), reflect(-normalize(spotLightPosition.xyz - fPosEye.xyz), normalize(normalMatrix * fNormal))), 0.0), shininess) * texture(specularTexture, fTexCoords).rgb;
+
+        fColor = min(vec4(min(color, (ambient + diffuse) + specular), 1.0f) * vec4(light, 1.0f), 1.0f) + spotlightEffect;
     }
 }
