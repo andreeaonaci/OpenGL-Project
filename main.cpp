@@ -492,8 +492,8 @@ void initUniforms() {
 	spotLightDirection = glm::normalize(glm::vec3(0, -1, 0));
 	spotLightPosition = glm::vec3(-60.245f, -5.9461f, -111.09f);
 
-	spotLightCutoff = glm::cos(glm::radians(45.0f));
-	spotLightInnerCutoff = glm::cos(glm::radians(100.0f));
+	spotLightCutoff = glm::cos(glm::radians(25.0f));
+	spotLightInnerCutoff = glm::cos(glm::radians(50.0f));
 	
 	glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightCutoff"), spotLightCutoff);
 	glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightInnerCutoff"), spotLightInnerCutoff);
