@@ -37,8 +37,8 @@ float moveRight;
 
 int pointLight = 0;
 int spotLight = 0;
-glm::vec3 lightPos1;
-GLuint lightPos1Loc;
+glm::vec3 lightPointPos;
+GLuint lightPointPosLoc;
 glm::vec3 lightPos2;
 GLuint lightPos2Loc;
 float spotLightCutoff;
@@ -67,7 +67,7 @@ gps::Camera myCamera(
 	glm::vec3(0.0f, 0.0f, 0.0f),
 	glm::vec3(0.0f, 20.0f, 0.0f)
 );
-float cameraSpeed = 0.5f;
+float cameraSpeed = 1.0f;
 
 bool pressedKeys[1024];
 bool rotation;
@@ -484,13 +484,13 @@ void initUniforms() {
 	glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
 
 	// pointlight
-	lightPos1 = glm::vec3(100.0f, 100.56f, 101.05f);
-	lightPos1Loc = glGetUniformLocation(myCustomShader.shaderProgram, "lightPos1");
-	glUniform3fv(lightPos1Loc, 1, glm::value_ptr(lightPos1));
+	lightPointPos = glm::vec3(100.0f, 100.56f, 101.05f);
+	lightPointPosLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightPointPos");
+	glUniform3fv(lightPointPosLoc, 1, glm::value_ptr(lightPointPos));
 
 	//spotlight
 	spotLightDirection = glm::normalize(glm::vec3(0, -1, 0));
-	spotLightPosition = glm::vec3(-60.245f, -5.9461f, -111.09f);
+	spotLightPosition = glm::vec3(-60.245f, -5.9461f, 111.09f);
 
 	spotLightCutoff = glm::cos(glm::radians(25.0f));
 	spotLightInnerCutoff = glm::cos(glm::radians(50.0f));
