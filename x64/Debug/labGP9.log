@@ -1,0 +1,18 @@
+﻿  Camera.cpp
+  main.cpp
+  Mesh.cpp
+  Model3D.cpp
+  Shader.cpp
+  stb_image.cpp
+G:\poli\an3\SEM1\GP\labGP9\labGP9\main.cpp(14,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+G:\poli\an3\SEM1\GP\labGP9\labGP9\Mesh.hpp(9,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Mesh.cpp')
+  
+G:\poli\an3\SEM1\GP\labGP9\labGP9\Mesh.hpp(9,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Model3D.cpp')
+  
+G:\poli\an3\SEM1\GP\labGP9\labGP9\Shader.hpp(17,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Shader.cpp')
+  
+  tiny_obj_loader.cpp
+  Generating Code...

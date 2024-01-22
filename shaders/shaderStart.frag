@@ -8,7 +8,6 @@ in vec3 fPos;
 
 out vec4 fColor;
 
-// Lighting
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform	mat3 normalMatrix;
@@ -17,18 +16,20 @@ uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
 uniform sampler2D shadowMap;
 
-//Point light
-
 uniform int pointLight;
 uniform vec3 pointLightPos;
 uniform float pointLightStrength;
 
 uniform vec3 lightPointPos;
+uniform vec3 lightPointPos2;
 uniform vec3 lightPos2;
 
+uniform int rain;
+uniform float iTime;
+
 float constant = 1.0f;
-float linear = 0.00225f;
-float quadratic = 0.00375;
+float linear = 0.0045f;
+float quadratic = 0.0075;
 
 float ambientPoint = 0.5f;
 float specularStrengthPoint = 0.5f;
@@ -44,6 +45,7 @@ float specularStrength = 0.9f;
 float shininess = 64.0f;
 
 uniform int spotLight;
+uniform int fragmentDiscarding;
 
 float spotQuadratic = 0.05f;
 float spotLinear = 0.15f;
@@ -63,20 +65,19 @@ uniform vec3 spotLightPosition;
 uniform int fogInitial;
 uniform float fogDensity;
 
+uniform int transparency;
+
 vec3 computeLightComponents()
-{       
+{ 
     vec3 cameraPosEye = vec3(0.0f);
-    vec3 normalEye = normalize(fNormal);      
-    vec3 lightDirN = normalize(lightDir);
-    vec3 pointLightDir = normalize(pointLightPos - fPosEye.xyz);
-    vec3 viewDirN = normalize(cameraPosEye - fPosEye.xyz);
-    ambient = ambientStrength * lightColor;
-    diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
-    vec3 reflection = reflect(-lightDirN, normalEye);
-    float specCoeff = pow(max(dot(viewDirN, reflection), 0.0f), shininess);
-    specular = specularStrength * specCoeff * lightColor;
-    float pointLightDiffuse = max(dot(normalEye, pointLightDir), 0.0f);
-    diffuse += pointLightStrength * pointLightDiffuse * lightColor;
+	vec3 normalEye = normalize(fNormal);	
+	vec3 lightDirN = normalize(lightDir);
+	vec3 viewDirN = normalize(cameraPosEye - fPosEye.xyz);
+	ambient = ambientStrength * lightColor;
+	diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
+	vec3 reflection = reflect(-lightDirN, normalEye);
+	float specCoeff = pow(max(dot(viewDirN, reflection), 0.0f), shininess);
+	specular = specularStrength * specCoeff * lightColor;
     return (ambient + diffuse + specular);
 }
 
@@ -94,7 +95,7 @@ vec3 computePointLight(vec4 lightPosEye)
 	vec3 specular = specularStrengthPoint * specCoeff * lightColor;
 	float distance = length(lightPosEye.xyz - fPosEye.xyz);
 	float att = 1.0f / (constant + linear * distance + quadratic * distance * distance);
-	return (ambient + diffuse + specular) * att * vec3(2.0f,2.0f,2.0f);
+	return (ambient + diffuse + specular) * att;/// * vec3(2.0f,2.0f,2.0f);
 }
 
 float computeShadow()
@@ -160,44 +161,84 @@ void main()
     vec3 baseColor = vec3(0.9f, 0.35f, 0.0f);
     vec4 diffuseColor = texture(diffuseTexture, fTexCoords);
     float shadow = computeShadow();
-    
 
     ambient *= vec3(texture(diffuseTexture, fTexCoords)) * 1.2f;
     diffuse *= vec3(texture(diffuseTexture, fTexCoords));
     specular *= vec3(texture(specularTexture, fTexCoords));
 
-    if (pointLight == 1) {
-        vec4 lightPosEye1 = view * vec4(lightPointPos, 1.0f);
-        vec3 pointLightValue = computePointLight(lightPosEye1);
-        ambient *= pointLightValue * ambientStrength * diffuseColor.rgb;
-        diffuse *= pointLightValue * max(dot(normalize(normalMatrix * fNormal), normalize(lightPosEye1.xyz - fPosEye.xyz)), 0.0) * diffuseColor.rgb;
-        specular *= pointLightValue * specularStrength * pow(max(dot(normalize(normalMatrix * fNormal), reflect(-normalize(lightPosEye1.xyz - fPosEye.xyz), normalize(normalMatrix * fNormal))), 0.0), shininess) * texture(specularTexture, fTexCoords).rgb;
+    if (diffuseColor.x < 0.005 && fragmentDiscarding == 1)
+    {
+        discard;
     }
+    else {
+        if (pointLight == 1) {
+            vec4 lightPosEye1 = view * vec4(lightPointPos, 1.0f);
+            vec3 pointLightValue1 = computePointLight(lightPosEye1);
+            vec3 ambient1 = pointLightValue1 * ambientStrength * diffuseColor.rgb;
+            vec3 diffuse1 = pointLightValue1 * max(dot(normalize(normalMatrix * fNormal), normalize(lightPosEye1.xyz - fPosEye.xyz)), 0.0) * diffuseColor.rgb;
+            vec3 specular1 = pointLightValue1 * specularStrength * pow(max(dot(normalize(normalMatrix * fNormal), reflect(-normalize(lightPosEye1.xyz - fPosEye.xyz), normalize(normalMatrix * fNormal))), 0.0), shininess) * texture(specularTexture, fTexCoords).rgb;
 
-    vec3 color = min((ambient + (1.0f - shadow) * diffuse) + (1.0f - shadow) * specular, 1.0f);
-    vec3 colorF = min(color, (ambient + diffuse) + specular);
+            vec4 lightPosEye2 = view * vec4(lightPointPos2, 1.0f);
+            vec3 pointLightValue2 = computePointLight(lightPosEye2);
+            vec3 ambient2 = pointLightValue2 * ambientStrength * diffuseColor.rgb;
+            vec3 diffuse2 = pointLightValue2 * max(dot(normalize(normalMatrix * fNormal), normalize(lightPosEye2.xyz - fPosEye.xyz)), 0.0) * diffuseColor.rgb;
+            vec3 specular2 = pointLightValue2 * specularStrength * pow(max(dot(normalize(normalMatrix * fNormal), reflect(-normalize(lightPosEye2.xyz - fPosEye.xyz), normalize(normalMatrix * fNormal))), 0.0), shininess) * texture(specularTexture, fTexCoords).rgb;
 
-    float fogFactor = computeFog();
-    vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+            ambient = ambient1 + ambient2;
+            diffuse = diffuse1 + diffuse2;
+            specular = specular1 + specular2;
+        }
 
-    if (fogInitial == 0) {
-        fColor = min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f);
-    } else {
-        fColor = mix(fogColor, min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f), fogFactor);
-    }
 
-    if (spotLight == 1) {
-        vec4 spotLightPosEye = view * vec4(spotLightPosition, 1.0f);
-        vec4 spotlightEffect = 10 * spotLightComputation(spotLightPosEye);
-        ambient *= spotlightEffect.xyz * ambientStrength * lightColor;
-        vec3 lightDirN = normalize(spotLightPosEye.xyz - fPosEye.xyz);
-        vec3 normalEyeN = normalize(normalMatrix * fNormal);
-        diffuse *= spotlightEffect.xyz * max(dot(normalEyeN, lightDirN), 0.0) * lightColor;
-        vec3 viewDirN = normalize(vec3(0.0f) - fPosEye.xyz);
-        vec3 reflectDir = reflect(-lightDirN, normalize(fNormal));
-        float spec = pow(max(dot(reflectDir, viewDirN), 0.0), shininess);
-        specular *= spotlightEffect.xyz * specularStrength * spec * lightColor;
+        vec3 color = min((ambient + (1.0f - shadow) * diffuse) + (1.0f - shadow) * specular, 1.0f);
+        vec3 colorF = min(color, (ambient + diffuse) + specular);
 
-        fColor = min(vec4(min(color, (ambient + diffuse) + specular), 1.0f) * vec4(light, 1.0f), 1.0f) + spotlightEffect;
+        float fogFactor = computeFog();
+        vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+
+        if (fogInitial == 0) {
+            fColor = min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f);
+        } 
+        else {
+            fColor = mix(fogColor, min(vec4(colorF, 1.0f) * vec4(light, 1.0f), 1.0f), fogFactor);
+        }
+
+        if (spotLight == 1) {
+            vec4 spotLightPosEye = view * vec4(spotLightPosition, 1.0f);
+            vec4 spotlightEffect = 10 * spotLightComputation(spotLightPosEye);
+            ambient *= spotlightEffect.xyz * ambientStrength * lightColor;
+            vec3 lightDirN = normalize(spotLightPosEye.xyz - fPosEye.xyz);
+            vec3 normalEyeN = normalize(normalMatrix * fNormal);
+            diffuse *= spotlightEffect.xyz * max(dot(normalEyeN, lightDirN), 0.0) * lightColor;
+            vec3 viewDirN = normalize(vec3(0.0f) - fPosEye.xyz);
+            vec3 reflectDir = reflect(-lightDirN, normalize(fNormal));
+            float spec = pow(max(dot(reflectDir, viewDirN), 0.0), shininess);
+            specular *= spotlightEffect.xyz * specularStrength * spec * lightColor;
+
+            fColor = min(vec4(min(color, (ambient + diffuse) + specular), 1.0f) * vec4(light, 1.0f), 1.0f) + spotlightEffect;
+        }
+        if (rain == 1) {
+            vec4 rainColor = vec4(0.0, 0.0, 1.0, 0.0);
+            vec2 uv = fColor.xy / fTexCoords.xy;
+            vec2 u = fColor.xy / fTexCoords.xy, n = texture(specularTexture, u * 0.1).rg;
+            
+            rainColor = textureLod(diffuseTexture, u, 2.5);
+            
+            for (float r = 4.0; r > 0.0; r--) {
+                vec2 x = fTexCoords.xy * r * 0.015, p = 6.28 * u * x + (n - 0.5) * 2.0, s = sin(p);
+                vec4 d = texture(specularTexture, round(u * x - 0.25) / x);
+                float t = (s.x + s.y) * max(0.0, 1.0 - fract(iTime * (d.b + 0.1) + d.g) * 2.0);
+                
+                if (d.r < (5.0 - r) * 0.08 && t > 0.5) {
+                    rainColor = vec4(0.0, 0.0, 1.0, 1.0);
+                    discard;
+                }
+            }
+            fColor = fColor + rainColor;
+        }
+        else {
+            vec4 rainColor = vec4(0.0, 0.0, 0.0, 0.0);
+            fColor = fColor + rainColor;
+        }
     }
 }

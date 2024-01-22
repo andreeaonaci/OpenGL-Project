@@ -1,0 +1,22 @@
+# Blender 3.6.4 MTL File: 'untitled.blend'
+# www.blender.org
+
+newmtl Feather_01.001
+Ns 200.000000
+Ka 0.500000 0.500000 0.500000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 3
+map_Kd feather.png
+map_d feather.png
+
+newmtl Feather_2.001
+Ns 200.000000
+Ka 0.500000 0.500000 0.500000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd feather 02.jpg

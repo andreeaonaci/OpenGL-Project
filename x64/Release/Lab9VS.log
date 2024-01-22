@@ -1,0 +1,16 @@
+﻿  main.cpp
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(76,24): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(178,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(179,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(183,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(184,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(185,10): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(186,10): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(346,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+G:\poli\an3\SEM1\GP\ProjectGP\main.cpp(606,12): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  Generating code
+  4 of 1805 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    11 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Lab9VS.vcxproj -> G:\poli\an3\SEM1\GP\ProjectGP\x64\Release\ProjectGP.exe

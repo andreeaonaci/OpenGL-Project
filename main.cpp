@@ -32,13 +32,16 @@ const unsigned int SHADOW_HEIGHT = 3000;
 
 std::vector<const GLchar*> facesSkyBox;
 
-float moveUp;
+float moveFront;
 float moveRight;
 
 int pointLight = 0;
 int spotLight = 0;
 glm::vec3 lightPointPos;
+glm::vec3 lightPointPos2;
 GLuint lightPointPosLoc;
+GLuint lightPointPosLoc2;
+GLuint alphaValueLoc;
 glm::vec3 lightPos2;
 GLuint lightPos2Loc;
 float spotLightCutoff;
@@ -60,9 +63,6 @@ glm::vec3 lightColor;
 GLuint lightColorLoc;
 
 gps::Camera myCamera(
-	//glm::vec3(0.0f, 197.56f, 241.05f),
-	//glm::vec3(0.0f, 0.0f, 0.0f),
-	//glm::vec3(0.0f, 20.733f, 0.0f)
 	glm::vec3(0.0f, 2.0f, 200.5f),
 	glm::vec3(0.0f, 0.0f, 0.0f),
 	glm::vec3(0.0f, 20.0f, 0.0f)
@@ -73,22 +73,18 @@ bool pressedKeys[1024];
 bool rotation;
 float angleY = 0.0f;
 float anglePigeon = 0.0f;
+int fragmentDiscarding = 0.0f;
+int rain;
 GLfloat lightAngle;
 
 gps::Model3D island;
-gps::Model3D sun;
 gps::Model3D pigeon;
 gps::Model3D pigeonWings;
-gps::Model3D chest;
 gps::Model3D screenQuad;
 gps::Model3D swing;
 gps::Model3D swingBars;
 gps::Model3D umbrella;
-gps::Model3D palm;
-gps::Model3D leaves;
 gps::Model3D boat;
-gps::Model3D lightCube;
-gps::Model3D coroane;
 
 gps::Shader myCustomShader;
 gps::Shader depthMapShader;
@@ -104,6 +100,7 @@ bool autoRotateBool = false;
 float previewAngle = 0.6f;
 
 int fogInitial = 0;
+int transparency = 0;
 GLint fogInitLoc;
 GLfloat fogDensity = 0.005f;
 gps::SkyBox skyBox;
@@ -116,8 +113,6 @@ bool firstMouse = true;
 float lastX = 500, lastY = 375;
 
 bool showDepthMap;
-
-//float spotlight;
 
 float angleUmbrella = 0.0f;
 
@@ -146,7 +141,6 @@ GLenum glCheckError_(const char *file, int line) {
 void windowResizeCallback(GLFWwindow* window, int width, int height) {
 	fprintf(stdout, "window resized to width: %d , and height: %d\n", width, height);
 	glViewport(0, 0, width, height);
-	//TODO	
 }
 
 void previewFunction() {
@@ -235,50 +229,48 @@ void processMovement()
 		myCamera.move(gps::MOVE_RIGHT, cameraSpeed);		
 	}
 
-	//start point light
 	if (pressedKeys[GLFW_KEY_R]) {
 		myCustomShader.useShaderProgram();
 		pointLight = 1;
 		glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "pointLight"), pointLight);
 	}
 
-	//stop point light
 	if (pressedKeys[GLFW_KEY_T]) {
 		myCustomShader.useShaderProgram();
 		pointLight = 0;
 		glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "pointLight"), pointLight);
 	}
 
-	// start spotlight
 	if (pressedKeys[GLFW_KEY_Y]) {
 		myCustomShader.useShaderProgram();
 		spotLight = 1;
 		glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "spotLight"), spotLight);
 	}
 
-	// stop spotlight
 	if (pressedKeys[GLFW_KEY_U]) {
 		myCustomShader.useShaderProgram();
 		spotLight = 0;
 		glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "spotLight"), spotLight);
 	}
 
-	// line view
 	if (pressedKeys[GLFW_KEY_1]) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-	// point view
 	if (pressedKeys[GLFW_KEY_2]) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 	}
 
-	// normal view
 	if (pressedKeys[GLFW_KEY_3]) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
-	// start fog
+	if (pressedKeys[GLFW_KEY_7]) {
+		glEnable(GL_POLYGON_SMOOTH);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
 	if (pressedKeys[GLFW_KEY_B]) {
 
 		myCustomShader.useShaderProgram();
@@ -288,7 +280,6 @@ void processMovement()
 
 	}
 
-	// stop fog
 	if (pressedKeys[GLFW_KEY_V]) {
 		myCustomShader.useShaderProgram();
 		fogInitial = 0;
@@ -297,49 +288,68 @@ void processMovement()
 
 	}
 
-	// increase the intensity of fog
 	if (pressedKeys[GLFW_KEY_4])
 	{
 		if (fogDensity < 1.0f) {
-			fogDensity += 0.0001f;
+			fogDensity += 0.00005f;
 		}
 	}
 
-	// decrease the intensity of fog
 	if (pressedKeys[GLFW_KEY_5])
 	{
 		if (fogDensity > 0.0f) {
-			fogDensity -= 0.0001f;
+			fogDensity -= 0.00005f;
 		}
 	}
 
-	//rotate umbrella
 	if (pressedKeys[GLFW_KEY_I]) {
 		angleUmbrella += 1.0f;
 	}
 
-	// move LEFT boat
 	if (pressedKeys[GLFW_KEY_LEFT]) {
 		if (moveRight < 100)
 			moveRight -= 0.5;
 	}
 
-	// move RIGHT boat
 	if (pressedKeys[GLFW_KEY_RIGHT]) {
 		if (moveRight < 100)
 			moveRight += 0.5;
 	}
 
-	// move FRONT boat
 	if (pressedKeys[GLFW_KEY_UP]) {
-		if (moveUp < 100)
-			moveUp += 0.5;
+		if (moveFront < 100)
+			moveFront += 0.5;
 	}
 
-	// move BACK boat
 	if (pressedKeys[GLFW_KEY_DOWN]) {
-		if (moveUp < 100)
-			moveUp -= 0.5;
+		if (moveFront < 100)
+			moveFront -= 0.5;
+	}
+
+	if (pressedKeys[GLFW_KEY_O]) {
+		myCustomShader.useShaderProgram();
+		if (!fragmentDiscarding)
+			fragmentDiscarding = 1;
+		else
+			fragmentDiscarding = 0;
+		glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "fragmentDiscarding"), fragmentDiscarding);
+	}
+	
+	if (pressedKeys[GLFW_KEY_K]) {
+		if (rain == 1)
+			rain = 0;
+		else
+			rain = 1;
+		if (rain == 1) {
+			myCustomShader.useShaderProgram();
+			glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "rain"), rain);
+			float currentTime = glfwGetTime();
+			glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "iTime"), currentTime);
+		}
+		else {
+			myCustomShader.useShaderProgram();
+			glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "rain"), rain);
+		}
 	}
 }
 
@@ -407,15 +417,12 @@ void initOpenGLState()
 
 void initObjects() {
 	island.LoadModel("objects/island/Small_Tropical_Island1.obj");
-	sun.LoadModel("objects/sun/sun.obj");
 	pigeon.LoadModel("objects/pigeon/body.obj");
 	swing.LoadModel("objects/swing/woodswing.obj");
 	swing.LoadModel("objects/swing/swingBars.obj");
 	umbrella.LoadModel("objects/umbrella/umbrela1.obj");
 	boat.LoadModel("objects/ship/boat.obj");
 	screenQuad.LoadModel("objects/quad/quad.obj");
-	lightCube.LoadModel("objects/cube/cube.obj");
-	coroane.LoadModel("objects/island/coroane.obj");
 }
 
 void initShaders() {
@@ -487,6 +494,10 @@ void initUniforms() {
 	lightPointPos = glm::vec3(100.0f, 100.56f, 101.05f);
 	lightPointPosLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightPointPos");
 	glUniform3fv(lightPointPosLoc, 1, glm::value_ptr(lightPointPos));
+
+	lightPointPos2 = glm::vec3(-60.245f, -8.9461f, 111.09f);
+	lightPointPosLoc2 = glGetUniformLocation(myCustomShader.shaderProgram, "lightPointPos2");
+	glUniform3fv(lightPointPosLoc2, 1, glm::value_ptr(lightPointPos2));
 
 	//spotlight
 	spotLightDirection = glm::normalize(glm::vec3(0, -1, 0));
@@ -604,9 +615,9 @@ void drawObjects(gps::Shader shader, bool depthPass) {
 
 	swing.Draw(shader);
 
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(-100.65f, 4.6584f, -228.71f));
+	model = glm::translate(glm::mat4(1.0f), glm::vec3(-100.65f, -0.6584f, -228.71f));
 	model = glm::scale(model, glm::vec3(0.5f));
-	model = glm::translate(model, glm::vec3(-100.65f + moveRight, 4.6584f, -228.71f + moveUp));
+	model = glm::translate(model, glm::vec3(-100.65f + moveRight, 4.6584f, -228.71f + moveFront));
 	glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 	if (!depthPass) {
@@ -635,8 +646,6 @@ void drawObjects(gps::Shader shader, bool depthPass) {
 	}
 
 	umbrella.Draw(shader);
-
-	skyBox.Draw(skyBoxShader, view, projection);
 }
 
 void renderScene() {
@@ -721,6 +730,8 @@ void renderScene() {
 		lightModel = glm::scale(lightModel, glm::vec3(10.0f));
 
 		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+
+		skyBox.Draw(skyBoxShader, view, projection);
 	}
 }
 
@@ -749,10 +760,6 @@ int main(int argc, const char * argv[]) {
 	skyBoxShaderInit();
 
 	glCheckError();
-
-	//glfwSetCursorPosCallback(glWindow, mouseCallback);
-
-	//glCheckError();
 
 	while (!glfwWindowShouldClose(glWindow)) {
 		float deltaTime = 0.05f;

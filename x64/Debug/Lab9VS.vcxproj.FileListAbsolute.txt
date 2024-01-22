@@ -1,0 +1,2 @@
+G:\poli\an3\SEM1\GP\Lab9VS\x64\Debug\Lab9VS.exe
+G:\poli\an3\SEM1\GP\ProjectGP\x64\Debug\ProjectGP.exe
